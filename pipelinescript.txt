@@ -1,0 +1,39 @@
+pipeline {
+    agent any
+    environment {
+        nuget = "C:\\Users\\109492\\Desktop\\Nuget\\nuget.exe"
+    }
+    
+    stages {
+        stage('clean') {
+            steps{
+                bat 'echo Cleanup stage'
+                cleanWs notFailBuild: true
+            }
+        }
+        stage('Git checkout') {
+            steps{
+                bat 'echo Git checkout stage'
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/pravinksanthos/demoapp.git']]])
+            }
+        }
+        stage('Restore package stage') {
+            steps{
+                bat 'echo Restore package stage'
+                bat '%nuget% restore demoapp.sln'
+            }
+        }
+        stage('Build') {
+            steps{
+                bat 'echo Build stage'
+                bat "\"${tool 'MSBuild'}\" -verbosity:detailed demoapp.sln /p:configuration=Release /p:Platform=\"Any CPU\""
+            }
+        }
+        stage('Test Execution') {
+            steps{
+                bat 'echo Test Exicution started'
+                bat 'echo Test Exicution completed'
+            }
+        }
+    }
+}

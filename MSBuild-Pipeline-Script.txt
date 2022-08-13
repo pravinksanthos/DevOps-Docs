@@ -1,0 +1,60 @@
+pipeline {
+    agent any
+    environment {
+        nuget = "C:\\Users\\109492\\Desktop\\Nuget\\nuget.exe"
+    }
+    
+    stages {
+        stage('clean') {
+            steps{
+                bat 'echo Cleanup stage'
+                cleanWs notFailBuild: true
+            }
+        }
+        stage('Git checkout') {
+            steps{
+                bat 'echo Git checkout stage'
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/pravinksanthos/demoapp.git']]])
+            }
+        }
+        stage('Restore package stage') {
+            steps{
+                bat 'echo Restore package stage'
+                bat '%nuget% restore demoapp.sln'
+            }
+        }
+        stage('Build') {
+            steps{
+                bat 'echo Build stage'
+                bat "\"${tool 'MSBuild'}\" -verbosity:detailed demoapp.sln /p:configuration=Release /p:Platform=\"Any CPU\""
+            }
+        }
+		stage('SonarQube Analysis'){
+       steps {
+        script {
+          // requires SonarQube Scanner 4.7+
+          scannerHome = tool 'SonarQube'
+           def scannerHome = tool 'SonarQube';
+          withSonarQubeEnv('SonarQube'){
+              bat "${scannerHome}/bin/sonar-scanner \
+              -D sonar.login=admin \
+              -D sonar.password=Ashrav@1206 \
+              -D sonar.projectKey=SonarQube1 \
+              -D sonar.exclusions=vendor/**,resources/**,**/*.java \
+              -D sonar.host.url=http://localhost:9000/"
+          }
+        }
+      }
+     }
+		stage('Deploy Application') {
+            steps{
+                bat 'echo Deploy Application'
+            }
+        }
+		stage('email notification') {
+            steps{
+                mail bcc: '', body: 'Email is succesfully triggered by Jenkins', cc: '', from: '', replyTo: '', subject: 'Build Pipeline Status ', to: 'pravinkumarsanthosakani@toppanmerrillllc.com'
+            }
+        }
+    }
+}
